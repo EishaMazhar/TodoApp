@@ -1,6 +1,9 @@
 import React, { Component } from "react";
 import axios from "axios";
 import { Card, Button } from "antd";
+import { Input } from "antd";
+const { Search } = Input;
+
 //import { Card } from "antd";
 
 class Listview extends Component {
@@ -13,6 +16,17 @@ class Listview extends Component {
       .then(val => this.setState({ list: val.data }))
       .catch(err => console.log(err));
   }
+  // componentWillReceiveProps(nextProps) {
+
+  //   // if (nextProps.status === 200) {
+  //   //   this.setState({ list: this.state.list.concat(nextProps) });
+  //   // }
+  //   // console.log(nextProps);
+  // }
+  getprops = props => {
+    const obj = this.props.addState();
+    this.setState({ list: this.state.list.concat(obj) });
+  };
   onDelete = id => {
     console.log(id);
     axios
@@ -22,15 +36,12 @@ class Listview extends Component {
       )
       .catch(err => console.log(err));
   };
+
   getListItems = () =>
     this.state.list.map((i, key) => {
       return (
         <div key={key}>
-          <Card
-            type="inner"
-            title=""
-            style={{ backgroundColor: "rgba(188,143,143,0.8)" }}
-          >
+          <Card type="inner" title="" style={{ backgroundColor: "white" }}>
             <h3>{i.name}</h3>
             <p>{i.date}</p>
             <p>{i.priority}</p>
@@ -42,8 +53,20 @@ class Listview extends Component {
       );
     });
 
+  searchId = task => {
+    // this.state.list.filter(i=>)
+  };
   render() {
-    return <div>{this.getListItems()}</div>;
+    return (
+      <div>
+        <Search
+          placeholder="input search text"
+          onChange={this.searchId}
+          enterButton
+        />
+        {this.getListItems()}
+      </div>
+    );
   }
 }
 

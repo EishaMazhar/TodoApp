@@ -1,0 +1,21 @@
+.NavBar {
+  background: gray;
+}
+.NavBar ul {
+  list-style: none;
+  text-decoration: none;
+  font-size: 50px;
+  display: flex;
+  justify-content: center;
+}
+.addItem {
+  color: black;
+  position: relative;
+  left: 30%;
+  display: block;
+  cursor: pointer;
+}
+.listItems {
+  overflow-y: scroll;
+  max-height: 50rem;
+}
