@@ -1,9 +1,17 @@
 import React, { Component } from "react";
 import "./Todos.css";
-
+import "../App.css";
 import axios from "axios";
 import { API_URL, TODOS } from "../Constants";
-import { Input, Button, Select, DatePicker, Card, Icon } from "antd";
+import {
+  Input,
+  Button,
+  Select,
+  DatePicker,
+  Card,
+  Icon,
+  PageHeader
+} from "antd";
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
@@ -67,8 +75,16 @@ class Todos extends Component {
 
   // getting the items from the mongodb
   componentDidMount() {
+    const token = localStorage.getItem("token");
+    console.log({
+      Authorization: `Bearer ${token}`
+    });
     axios
-      .get(`${API_URL}${TODOS}`)
+      .get(`${API_URL}${TODOS}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
       .then(val => this.setState({ list: val.data }))
       .catch(err => console.log(err));
   }
@@ -116,8 +132,13 @@ class Todos extends Component {
       priority: this.state.priority,
       date: this.state.date
     };
+    const token = localStorage.getItem("token");
     axios
-      .post(`${API_URL}${TODOS}`, obj)
+      .post(`${API_URL}${TODOS}`, obj, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
       .then(val =>
         this.setState({
           list: this.state.list.concat(val.data),
@@ -141,14 +162,18 @@ class Todos extends Component {
   render() {
     return (
       <div>
-        <nav className="NavBar">
+        {/* <nav className="NavBar">
           <ul>
             <li className="Logo">TODO APP</li>
             <li className="addItem">
               <Icon type="plus-circle" />
             </li>
           </ul>
-        </nav>
+        </nav> */}
+        <PageHeader className="Appheader">
+          <h1>TODO APP</h1>
+        </PageHeader>
+        {/* <Icon type="plus-circle" style={{ align: "right" }} /> */}
         <div className="listItems">
           <div>
             <Input
