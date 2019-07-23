@@ -1,13 +1,17 @@
 import React, { Component } from "react";
-import axios from "axios";
 import { Form, Icon, Input, Button, Checkbox, PageHeader, Card } from "antd";
 import { Link } from "react-router-dom";
-import { API_URL, LOGIN } from "../Constants";
+import api_services from "../Services/api.service";
 
 class Login extends Component {
+  constructor(props) {
+    super(props);
+    this.api = new api_services();
+  }
   state = {
     username: "",
-    password: ""
+    password: "",
+    profile: {}
   };
 
   componentDidMount() {
@@ -18,7 +22,9 @@ class Login extends Component {
 
   setToken = idToken => {
     localStorage.setItem("token", idToken);
-    this.props.history.push("/todos");
+    this.props.history.push({
+      pathname: "/todos"
+    });
   };
 
   onFormChange = event => {
@@ -29,9 +35,9 @@ class Login extends Component {
     e.preventDefault();
     this.props.form.validateFields((err, values) => {
       if (!err) {
-        console.log("Received values of form: ", values);
-        axios
-          .post(`${API_URL}${LOGIN}`, values)
+        //console.log("Received values of form: ", values);
+        this.api
+          .postLogin(values)
           .then(val => this.setToken(val.data.token))
           .catch(err => console.log(err));
       }
@@ -46,21 +52,11 @@ class Login extends Component {
     const { getFieldDecorator } = this.props.form;
     return (
       <div>
-        {/* //{" "}
-        <nav className="NavBar">
-          //{" "}
-          <ul>
-            // <li className="Logo">TODO APP</li>
-            //{" "}
-          </ul>
-          //{" "}
-        </nav>
-        // <h1>USER login</h1> */}
         <PageHeader className="Appheader">
           <h1>TODO APP</h1>
         </PageHeader>
         <Card
-          title="Sign Up"
+          title="LOGIN"
           // extra={<a href="#">More</a>}
           style={{
             width: "45%",

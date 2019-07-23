@@ -1,11 +1,13 @@
 import React, { Component } from "react";
-import axios from "axios";
 import { Form, Icon, Card, Input, Button, PageHeader } from "antd";
-//import { Checkbox } from "antd";
 import { Link } from "react-router-dom";
-import { API_URL, SIGNUP } from "../Constants";
+import api_services from "../Services/api.service";
 
 class Signup extends Component {
+  constructor(props) {
+    super(props);
+    this.api = new api_services();
+  }
   state = {
     firstname: "",
     lastname: "",
@@ -16,14 +18,7 @@ class Signup extends Component {
     password2: "",
     validatep2: true
   };
-  // handleSubmit = e => {
-  //   e.preventDefault();
-  //   this.props.form.validateFields((err, values) => {
-  //     if (!err) {
-  //       console.log("Received values of form: ", values);
-  //     }
-  //   });
-  // };
+
   componentDidMount() {
     if (localStorage.getItem("token")) {
       this.props.history.push("/todos");
@@ -50,10 +45,9 @@ class Signup extends Component {
     this.props.form.validateFields((err, values) => {
       if (!err) {
         if (this.state.validatep2) {
-          // console.log("no error");
-          axios
-            .post(`${API_URL}${SIGNUP}`, values)
-            .then(val => console.log(val))
+          this.api
+            .signupUser(values)
+            .then(val => this.props.history.push("/login"))
             .catch(err => console.log(err));
         }
       }
@@ -63,11 +57,6 @@ class Signup extends Component {
     const { getFieldDecorator } = this.props.form;
     return (
       <div>
-        {/* <nav className="NavBar">
-          <ul>
-            <li className="Logo">TODO APP</li>
-          </ul>
-        </nav> */}
         <PageHeader className="Appheader">
           <h1>TODO APP</h1>
         </PageHeader>
@@ -230,18 +219,11 @@ class Signup extends Component {
               </Form.Item>
             </div>
             <Form.Item>
-              {/* {getFieldDecorator("remember", {
-              valuePropName: "checked",
-              initialValue: true
-            })(<Checkbox>Remember me</Checkbox>)}
-            <a className="login-form-forgot" href="">
-              Forgot password
-            </a> */}
               <Button
                 type="primary"
                 htmlType="submit"
                 className="login-form-button"
-                // onSubmit={this.handleSubmit}
+                onSubmit={this.handleSubmit}
               >
                 Signup
               </Button>

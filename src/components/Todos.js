@@ -1,21 +1,17 @@
 import React, { Component } from "react";
 import "./Todos.css";
 import "../App.css";
-import axios from "axios";
 import { API_URL, TODOS } from "../Constants";
-import {
-  Input,
-  Button,
-  Select,
-  DatePicker,
-  Card,
-  Icon,
-  PageHeader
-} from "antd";
+import api_services from "../Services/api.service";
+import { Input, Button, Select, DatePicker, Card, PageHeader } from "antd";
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
 class Todos extends Component {
+  constructor(props) {
+    super(props);
+    this.api = new api_services();
+  }
   state = {
     list: [],
     name: "",
@@ -24,7 +20,8 @@ class Todos extends Component {
     f_dateStart: "",
     f_dateEnd: "",
     f_priority: "",
-    f_name: ""
+    f_name: "",
+    profile: {}
   };
 
   searchDisplay = () => {
@@ -46,8 +43,9 @@ class Todos extends Component {
         mystr += `?from=${this.state.f_dateStart}&to=${this.state.f_dateEnd}`;
       }
     }
-    axios
-      .get(mystr)
+    const token = localStorage.getItem("token");
+    this.api
+      .searchTask(mystr, token)
       .then(val => this.setState({ list: val.data }))
       .then(
         this.setState({
@@ -76,22 +74,22 @@ class Todos extends Component {
   // getting the items from the mongodb
   componentDidMount() {
     const token = localStorage.getItem("token");
-    console.log({
-      Authorization: `Bearer ${token}`
-    });
-    axios
-      .get(`${API_URL}${TODOS}`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+    this.api
+      .getProfile(token)
+      .then(val => this.setState({ profile: val.data }))
+      .catch(err => console.log(err));
+    if (!token) {
+      this.props.history.push("/login");
+    }
+    this.api
+      .getItems(token)
       .then(val => this.setState({ list: val.data }))
       .catch(err => console.log(err));
   }
   onDelete = id => {
-    console.log(id);
-    axios
-      .delete(`${API_URL}${TODOS}${id}`)
+    const token = localStorage.getItem("token");
+    this.api
+      .deleteTodo(id, token)
       .then(val =>
         this.setState({ list: this.state.list.filter(item => item._id !== id) })
       )
@@ -127,18 +125,14 @@ class Todos extends Component {
   // adds the item to database
   taskSubmit = event => {
     event.preventDefault();
+    const token = localStorage.getItem("token");
     const obj = {
       name: this.state.name,
       priority: this.state.priority,
       date: this.state.date
     };
-    const token = localStorage.getItem("token");
-    axios
-      .post(`${API_URL}${TODOS}`, obj, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      })
+    this.api
+      .addTask(token, obj)
       .then(val =>
         this.setState({
           list: this.state.list.concat(val.data),
@@ -159,21 +153,44 @@ class Todos extends Component {
   onDateChange = dateString => {
     this.setState({ date: dateString });
   };
+  removeToken = () => {
+    localStorage.removeItem("token");
+    this.props.history.push("/login");
+  };
   render() {
     return (
       <div>
-        {/* <nav className="NavBar">
-          <ul>
-            <li className="Logo">TODO APP</li>
-            <li className="addItem">
-              <Icon type="plus-circle" />
-            </li>
-          </ul>
-        </nav> */}
-        <PageHeader className="Appheader">
-          <h1>TODO APP</h1>
-        </PageHeader>
-        {/* <Icon type="plus-circle" style={{ align: "right" }} /> */}
+        <div>
+          <PageHeader className="Appheader">
+            <h1>TODO APP</h1>
+            <div>
+              {" "}
+              <h2
+                style={{
+                  float: "left",
+                  position: "absolute",
+                  top: "30%"
+                }}
+              >
+                Welcome, {this.state.profile.userName}
+              </h2>
+              <Button
+                type="danger"
+                style={{
+                  float: "right",
+                  position: "absolute",
+                  top: "30%",
+                  right: "10%"
+                }}
+                onClick={this.removeToken}
+              >
+                {" "}
+                Logout
+              </Button>
+            </div>
+          </PageHeader>
+        </div>
+        <br />
         <div className="listItems">
           <div>
             <Input
@@ -225,7 +242,6 @@ class Todos extends Component {
               <Select
                 showSearch
                 style={{ width: 200 }}
-                value={this.state.priority}
                 placeholder="Select priority"
                 optionFilterProp="children"
                 onChange={this.getPriority}
@@ -234,6 +250,7 @@ class Todos extends Component {
                     .toLowerCase()
                     .indexOf(input.toLowerCase()) >= 0
                 }
+                value={this.state.f_priority}
               >
                 <Option value="High">High</Option>
                 <Option value="Medium">Medium</Option>
