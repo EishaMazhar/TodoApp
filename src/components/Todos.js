@@ -1,10 +1,26 @@
 import React, { Component } from "react";
 import "./Todos.css";
 import "../App.css";
+// import loader from "./loader";
+import Loader from "react-loader-spinner";
 import { API_URL, TODOS } from "../Constants";
 import api_services from "../Services/api.service";
-import { Input, Button, Select, DatePicker, Card, PageHeader } from "antd";
+import {
+  Input,
+  Button,
+  Select,
+  DatePicker,
+  Card,
+  PageHeader,
+  message
+} from "antd";
+message.config({
+  top: 100,
+  duration: 5,
+  maxCount: 3
+});
 const { RangePicker } = DatePicker;
+
 const { Option } = Select;
 
 class Todos extends Component {
@@ -21,9 +37,39 @@ class Todos extends Component {
     f_dateEnd: "",
     f_priority: "",
     f_name: "",
-    profile: {}
+    profile: {},
+    isLoading: true,
+    isAdded: false,
+    itemFound: false
   };
 
+  successAdd = () => {
+    this.setState({ isAdded: false });
+    message.success("Task Added");
+  };
+
+  // adds the item to database
+  taskSubmit = event => {
+    event.preventDefault();
+    const token = localStorage.getItem("token");
+    const obj = {
+      name: this.state.name,
+      priority: this.state.priority,
+      date: this.state.date
+    };
+    this.api
+      .addTask(token, obj)
+      .then(val =>
+        this.setState({
+          list: this.state.list.concat(val.data),
+          name: "",
+          priority: "",
+          date: "",
+          isAdded: true
+        })
+      )
+      .catch(err => message.error("Task not added"));
+  };
   searchDisplay = () => {
     let mystr = `${API_URL}${TODOS}`;
     if (this.state.f_name !== "") {
@@ -46,7 +92,7 @@ class Todos extends Component {
     const token = localStorage.getItem("token");
     this.api
       .searchTask(mystr, token)
-      .then(val => this.setState({ list: val.data }))
+      .then(val => this.setState({ list: val.data, itemFound: true }))
       .then(
         this.setState({
           f_dateEnd: "",
@@ -55,9 +101,12 @@ class Todos extends Component {
           f_priority: ""
         })
       )
-      .catch(err => console.log(err));
+      .catch(err => message.error("Search Unsuccessful"));
   };
-
+  successSearch = () => {
+    this.setState({ itemFound: false });
+    message.success("Search Successful");
+  };
   getPriority = event => {
     this.setState({ f_priority: event });
   };
@@ -70,13 +119,15 @@ class Todos extends Component {
     this.setState({ f_dateStart: dateString[0] });
     this.setState({ f_dateEnd: dateString[1] });
   };
-
+  // demoAsyncCall = () =>
+  //   new Promise(resolve => setTimeout(() => resolve(), 2500));
   // getting the items from the mongodb
   componentDidMount() {
+    // demoAsyncCall().then(() => this.setState({ isloading: false }));
     const token = localStorage.getItem("token");
     this.api
       .getProfile(token)
-      .then(val => this.setState({ profile: val.data }))
+      .then(val => this.setState({ profile: val.data, isLoading: false }))
       .catch(err => console.log(err));
     if (!token) {
       this.props.history.push("/login");
@@ -84,7 +135,8 @@ class Todos extends Component {
     this.api
       .getItems(token)
       .then(val => this.setState({ list: val.data }))
-      .catch(err => console.log(err));
+      .then(message.success("You are all set"))
+      .catch(err => message.error("Error while fetching Items"));
   }
   onDelete = id => {
     const token = localStorage.getItem("token");
@@ -93,7 +145,8 @@ class Todos extends Component {
       .then(val =>
         this.setState({ list: this.state.list.filter(item => item._id !== id) })
       )
-      .catch(err => console.log(err));
+      .then(message.success("Delete Successful"))
+      .catch(err => message.error("Delete Unsuccessful"));
   };
   getListItems = () =>
     this.state.list.map((i, key) => {
@@ -122,27 +175,6 @@ class Todos extends Component {
       );
     });
 
-  // adds the item to database
-  taskSubmit = event => {
-    event.preventDefault();
-    const token = localStorage.getItem("token");
-    const obj = {
-      name: this.state.name,
-      priority: this.state.priority,
-      date: this.state.date
-    };
-    this.api
-      .addTask(token, obj)
-      .then(val =>
-        this.setState({
-          list: this.state.list.concat(val.data),
-          name: "",
-          priority: "",
-          date: ""
-        })
-      )
-      .catch(err => console.log(err));
-  };
   ontaskChange = event => {
     this.setState({ name: event.target.value });
   };
@@ -157,119 +189,129 @@ class Todos extends Component {
     localStorage.removeItem("token");
     this.props.history.push("/login");
   };
+
   render() {
-    return (
-      <div>
+    if (this.state.isLoading) {
+      return (
         <div>
-          <PageHeader className="Appheader">
-            <h1>TODO APP</h1>
-            <div>
-              {" "}
-              <h2
-                style={{
-                  float: "left",
-                  position: "absolute",
-                  top: "30%"
-                }}
-              >
-                Welcome, {this.state.profile.userName}
-              </h2>
-              <Button
-                type="danger"
-                style={{
-                  float: "right",
-                  position: "absolute",
-                  top: "30%",
-                  right: "10%"
-                }}
-                onClick={this.removeToken}
-              >
-                {" "}
-                Logout
-              </Button>
-            </div>
-          </PageHeader>
+          <Loader type="Circles" color="grey" height="100vh" width={100} />
         </div>
-        <br />
-        <div className="listItems">
+      );
+    } else
+      return (
+        <div>
+          {this.state.isAdded ? this.successAdd() : ""}
+          {this.state.itemFound ? this.successSearch() : ""}
           <div>
-            <Input
-              placeholder="Add Task"
-              value={this.state.name}
-              onChange={this.ontaskChange}
-            />
-            <DatePicker
-              showTime
-              placeholder="Select due date"
-              value={this.state.date}
-              onChange={this.onDateChange}
-            />
-            <Select
-              showSearch
-              style={{ width: 200 }}
-              placeholder="Select priority"
-              value={this.state.priority}
-              optionFilterProp="children"
-              onChange={this.onPriorityChange}
-              filterOption={(input, option) =>
-                option.props.children
-                  .toLowerCase()
-                  .indexOf(input.toLowerCase()) >= 0
-              }
-            >
-              <Option value="High">High</Option>
-              <Option value="Medium">Medium</Option>
-              <Option value="Low">Low</Option>
-            </Select>{" "}
-            <Button type="primary" onClick={this.taskSubmit}>
-              AddTask
-            </Button>
+            <PageHeader className="Appheader">
+              <h1>TODO APP</h1>
+              <div>
+                {" "}
+                <h2
+                  style={{
+                    float: "left",
+                    position: "absolute",
+                    top: "30%"
+                  }}
+                >
+                  Welcome, {this.state.profile.userName}
+                </h2>
+                <Button
+                  type="danger"
+                  style={{
+                    float: "right",
+                    position: "absolute",
+                    top: "30%",
+                    right: "10%"
+                  }}
+                  onClick={this.removeToken}
+                >
+                  {" "}
+                  Logout
+                </Button>
+              </div>
+            </PageHeader>
           </div>
-          <div style={{ margin: "10px 50px", backgroundColor: "white" }}>
-            <div style={{ backgroundColor: "grey" }}>
+          <br />
+          <div className="listItems">
+            <div>
               <Input
-                placeholder="input search text"
-                value={this.state.f_name}
-                style={{ width: 200 }}
-                onChange={this.searchName}
+                placeholder="Add Task"
+                value={this.state.name}
+                onChange={this.ontaskChange}
               />
-              <RangePicker
-                showTime={{ format: "HH:mm" }}
-                format="YYYY-MM-DD HH:mm"
-                placeholder={["From", "To"]}
-                onChange={this.DateInterval}
+              <DatePicker
+                showTime
+                placeholder="Select due date"
+                value={this.state.date}
+                onChange={this.onDateChange}
               />
               <Select
                 showSearch
-                style={{ width: 200 }}
                 placeholder="Select priority"
+                style={{ width: 200 }}
+                value={this.state.priority}
                 optionFilterProp="children"
-                onChange={this.getPriority}
+                onChange={this.onPriorityChange}
                 filterOption={(input, option) =>
                   option.props.children
                     .toLowerCase()
                     .indexOf(input.toLowerCase()) >= 0
                 }
-                value={this.state.f_priority}
               >
                 <Option value="High">High</Option>
                 <Option value="Medium">Medium</Option>
                 <Option value="Low">Low</Option>
-                <Option value="All">All</Option>
-              </Select>
-              <Button
-                type="primary"
-                shape="round"
-                icon="search"
-                size="default"
-                onClick={this.searchDisplay}
-              />
-              <Card>{this.getListItems()}</Card>
+              </Select>{" "}
+              <Button type="primary" onClick={this.taskSubmit}>
+                AddTask
+              </Button>
+            </div>
+            <div style={{ margin: "10px 50px", backgroundColor: "white" }}>
+              <div style={{ backgroundColor: "grey" }}>
+                <Input
+                  placeholder="input search text"
+                  value={this.state.f_name}
+                  style={{ width: 200 }}
+                  onChange={this.searchName}
+                />
+                <RangePicker
+                  showTime={{ format: "HH:mm" }}
+                  format="YYYY-MM-DD HH:mm"
+                  placeholder={["From", "To"]}
+                  onChange={this.DateInterval}
+                />
+                <Select
+                  showSearch
+                  style={{ width: 200 }}
+                  placeholder="Select Priority"
+                  optionFilterProp="children"
+                  onChange={this.getPriority}
+                  filterOption={(input, option) =>
+                    option.props.children
+                      .toLowerCase()
+                      .indexOf(input.toLowerCase()) >= 0
+                  }
+                  value={this.state.f_priority}
+                >
+                  <Option value="High">High</Option>
+                  <Option value="Medium">Medium</Option>
+                  <Option value="Low">Low</Option>
+                  <Option value="All">All</Option>
+                </Select>
+                <Button
+                  type="primary"
+                  shape="round"
+                  icon="search"
+                  size="default"
+                  onClick={this.searchDisplay}
+                />
+                <Card>{this.getListItems()}</Card>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    );
+      );
   }
 }
 

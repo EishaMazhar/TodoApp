@@ -1,7 +1,21 @@
 import React, { Component } from "react";
-import { Form, Icon, Input, Button, Checkbox, PageHeader, Card } from "antd";
+import {
+  Form,
+  Icon,
+  Input,
+  Button,
+  Checkbox,
+  PageHeader,
+  Card,
+  message
+} from "antd";
 import { Link } from "react-router-dom";
 import api_services from "../Services/api.service";
+message.config({
+  top: 100,
+  duration: 5,
+  maxCount: 3
+});
 
 class Login extends Component {
   constructor(props) {
@@ -21,10 +35,12 @@ class Login extends Component {
   }
 
   setToken = idToken => {
-    localStorage.setItem("token", idToken);
-    this.props.history.push({
-      pathname: "/todos"
-    });
+    if (idToken !== undefined) {
+      localStorage.setItem("token", idToken);
+      this.props.history.push({
+        pathname: "/todos"
+      });
+    }
   };
 
   onFormChange = event => {
@@ -39,7 +55,7 @@ class Login extends Component {
         this.api
           .postLogin(values)
           .then(val => this.setToken(val.data.token))
-          .catch(err => console.log(err));
+          .catch(err => message.error("Incorrect username or password"));
       }
     });
   };
